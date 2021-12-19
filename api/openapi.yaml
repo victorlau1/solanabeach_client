@@ -1,0 +1,5024 @@
+openapi: 3.0.1
+info:
+  contact:
+    email: andrej@vgng.io
+  description: "Solanabeach Backend REST API documentation.\n\n## Rate limiting\n\
+    Current API rate limit per IP is 100 requests per second.\n  \n## Pagination\n\
+    Most of the endpoints returning array data support pagination. The API uses two\
+    \ types of pagination, depending on the returned data. Some endpoints support\
+    \ both, some are limited to just one type.\n  \n## Supported pagination types\n\
+    ### Offset / limit\nOffset / limit pagination is the simplest form of pagination\
+    \ supported by the API. Offset parameter represents the number of results to skip\
+    \ before returning the data, and the limit parameter limits the number of returned\
+    \ results. \n\nTo prevent overloading the API, all limit params have a max value.\
+    \ Each API endpoint has its own max value.\n\n### Cursor\nCursor pagination is\
+    \ more complex than the offset / limit one, but, it comes naturally for some blockchain\
+    \ data (such as blocks, transactions, token transfers, etc). Cursors contain data\
+    \ like blocknumber, transaction index, ... and they're described on their respective\
+    \ API endpoints. Limit parameter works exactly the same way as it does in the\
+    \ offset / limit pagination.\n\n## Authentication\nThe public API uses a Bearer\
+    \ OAuth authentication method, and the API key should be provided in the `Authorization`\
+    \ header in each request. API keys are issued on request.\n"
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Solanabeach Backend API
+  version: 0.0.1
+servers:
+- url: https://api.solanabeach.io/v1
+security:
+- apiAuth: []
+tags:
+- description: Block data
+  name: Block
+- description: Transaction data
+  name: Transaction
+- description: Account data
+  name: Account
+- description: Validator data
+  name: Validator
+- description: Token data
+  name: Token
+- description: Market data
+  name: Market
+- description: Token swap data
+  name: TokenSwap
+- description: Inflation data
+  name: Inflation
+- description: Other
+  name: Other
+paths:
+  /block-hash/{hash}:
+    get:
+      description: Fetch block by block hash if the given block exists
+      operationId: fetchBlockByBlockHash
+      parameters:
+      - description: Block hash
+        explode: false
+        in: path
+        name: hash
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+          description: Block found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Block not found
+      summary: Fetch block by block hash
+      tags:
+      - Block
+  /block/{number}:
+    get:
+      description: Fetch block by block number if the given block exists
+      operationId: fetchBlockByBlockNumber
+      parameters:
+      - description: Block number
+        explode: false
+        in: path
+        name: number
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+          description: Block found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Block not found
+      summary: Fetch block by block number
+      tags:
+      - Block
+  /latest-blocks:
+    get:
+      description: Fetch 50 latest blocks ordered by block number
+      operationId: fetchLatestBlocks
+      parameters:
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Block cursor (blocknumber)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Block'
+                type: array
+          description: Latest blocks
+      summary: Fetch 50 latest blocks
+      tags:
+      - Block
+  /top-programs:
+    get:
+      description: Fetch top program stats for last 1000 blocks
+      operationId: fetchTopPrograms
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200'
+                type: array
+          description: Top programs
+      summary: Fetch top program stats for last 1000 blocks
+      tags:
+      - Block
+  /transaction/{hash}:
+    get:
+      description: Fetch transaction by transaction hash if the given transaction
+        exists
+      operationId: fetchTransactionByHash
+      parameters:
+      - description: Transaction hash
+        explode: false
+        in: path
+        name: hash
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: Transaction found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Transaction not found
+      summary: Fetch transaction by transaction hash
+      tags:
+      - Transaction
+  /transaction-hashes/{address}:
+    get:
+      description: Fetch latest transaction hashes for the provided address
+      operationId: fetchTransactionHashesByAddress
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: address
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Transaction cursor (blocknumber,index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200_1'
+                type: array
+          description: Transaction hashes
+      summary: Fetch latest transaction hashes
+      tags:
+      - Transaction
+  /transactions/{address}:
+    get:
+      description: Fetch latest transactions for the provided address
+      operationId: fetchTransactionsByAddress
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: address
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Transaction cursor (blocknumber,index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Transaction'
+                type: array
+          description: Transactions
+      summary: Fetch latest transactions
+      tags:
+      - Transaction
+  /latest-transactions:
+    get:
+      description: Fetch 50 latest transactions
+      operationId: fetchLatestTransactions
+      parameters:
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Transaction cursor (blocknumber,index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Transaction'
+                type: array
+          description: Transactions
+      summary: Fetch 50 latest transactions
+      tags:
+      - Transaction
+  /block-transactions/{number}:
+    get:
+      description: Fetch latest transactions in the block with provided block number
+      operationId: fetchTransactionsByBlockNumber
+      parameters:
+      - description: Block number
+        explode: false
+        in: path
+        name: number
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Transaction cursor (index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_2'
+          description: Transactions
+      summary: Fetch latest transactions in a block
+      tags:
+      - Transaction
+  /validator/{votepubkey}:
+    get:
+      description: Fetch validator by vote pubkey if the given transaction exists
+      operationId: fetchValidatorByVotepubkey
+      parameters:
+      - description: Validator pubkey
+        explode: false
+        in: path
+        name: votepubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Validator'
+          description: Validator found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validator not found
+      summary: Fetch validator by vote pubkey
+      tags:
+      - Validator
+  /validator/{votepubkey}/history:
+    get:
+      description: Fetch validator's stake and delegator history
+      operationId: fetchValidatorHistory
+      parameters:
+      - description: Validator's vote pubkey
+        explode: false
+        in: path
+        name: votepubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+          description: Validator history found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validator history not found
+      summary: Fetch validator history
+      tags:
+      - Validator
+  /validator/{nodepubkey}/slots:
+    get:
+      description: Fetch validator slots in the current epoch
+      operationId: fetchValidatorSlots
+      parameters:
+      - description: Validator's node pubkey
+        explode: false
+        in: path
+        name: nodepubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200_4'
+                type: array
+          description: Validator slots
+      summary: Fetch validator slots
+      tags:
+      - Validator
+  /validator/{votepubkey}/delegators:
+    get:
+      description: Fetch validator deleagators
+      operationId: fetchValidatorDelegators
+      parameters:
+      - description: Validator's vote pubkey
+        explode: false
+        in: path
+        name: votepubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 1000)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/StakeAccount'
+                type: array
+          description: Validator delegators
+      summary: Fetch validator delegators
+      tags:
+      - Validator
+  /markets:
+    get:
+      description: Fetch markets
+      operationId: fetchMarkets
+      parameters:
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Sort by param
+        explode: true
+        in: query
+        name: sort
+        required: false
+        schema:
+          enum:
+          - name
+          - price
+          - volume
+          - liquidity
+          type: string
+        style: form
+      - description: Sort direction param
+        explode: true
+        in: query
+        name: dir
+        required: false
+        schema:
+          enum:
+          - asc
+          - desc
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+          description: Markets
+      summary: Fetch markets
+      tags:
+      - Market
+  /markets/base/{basemint}:
+    get:
+      description: Fetch markets by base mint
+      operationId: fetchMarketsByBaseMint
+      parameters:
+      - description: Base mint address
+        explode: false
+        in: path
+        name: basemint
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Market'
+                type: array
+          description: Markets
+      summary: Fetch markets by base mint
+      tags:
+      - Market
+  /markets/quote/{quotemint}:
+    get:
+      description: Fetch markets by quote mint
+      operationId: fetchMarketsByQuoteMint
+      parameters:
+      - description: Quote mint address
+        explode: false
+        in: path
+        name: quotemint
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Market'
+                type: array
+          description: Markets
+      summary: Fetch markets by quote mint
+      tags:
+      - Market
+  /market/{pubkey}:
+    get:
+      description: Fetch market by pubkey
+      operationId: fetchMarket
+      parameters:
+      - description: Market address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Market'
+          description: Market found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Market not found
+      summary: Fetch market
+      tags:
+      - Market
+  /token-swaps:
+    get:
+      description: Fetch token swaps
+      operationId: fetchTokenSwaps
+      parameters:
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Sort by param
+        explode: true
+        in: query
+        name: sort
+        required: false
+        schema:
+          enum:
+          - name
+          - price
+          - volume
+          - liquidity
+          type: string
+        style: form
+      - description: Sort direction param
+        explode: true
+        in: query
+        name: dir
+        required: false
+        schema:
+          enum:
+          - asc
+          - desc
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+          description: Token swaps
+      summary: Fetch token swaps
+      tags:
+      - TokenSwap
+  /token-swaps/{mint}:
+    get:
+      description: Fetch token swaps by mint
+      operationId: fetchTokenSwapsByMint
+      parameters:
+      - description: Mint address
+        explode: false
+        in: path
+        name: mint
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TokenSwap'
+                type: array
+          description: Token swaps
+      summary: Fetch token swaps by mint
+      tags:
+      - TokenSwap
+  /token-swap/{pubkey}:
+    get:
+      description: Fetch token swap by pubkey
+      operationId: fetchTokenSwap
+      parameters:
+      - description: Token swap address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSwap'
+          description: Token swap found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Token swap not found
+      summary: Fetch token swap
+      tags:
+      - TokenSwap
+  /inflation:
+    get:
+      description: Fetch inflation info
+      operationId: fetchInflationInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+          description: Inflation info
+      summary: Fetch inflation
+      tags:
+      - Inflation
+  /supply:
+    get:
+      description: Fetch Solana supply info provided by the RPC.
+      operationId: fetchSupplyInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+          description: Supply info
+      summary: Fetch supply
+      tags:
+      - Inflation
+  /stake-history:
+    get:
+      description: Fetch stake history by epochs
+      operationId: fetchStakeHistory
+      parameters:
+      - description: Result limit (max 512)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200_9'
+                type: array
+          description: Stake history
+      summary: Fetch stake history
+      tags:
+      - Other
+  /health:
+    get:
+      description: Fetch performance info
+      operationId: fetchHealth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_10'
+          description: Performance info
+      summary: Fetch performance info
+      tags:
+      - Other
+  /network-status:
+    get:
+      description: Fetch network status
+      operationId: fetchNetworkStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+          description: Network status
+      summary: Fetch network status
+      tags:
+      - Other
+  /staking-apy:
+    get:
+      description: Fetch staking APY
+      operationId: fetchStakingAPY
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+          description: Staking APY
+      summary: Fetch staking APY
+      tags:
+      - Other
+  /epoch-history:
+    get:
+      description: Fetch epoch history
+      operationId: fetchEpochHistory
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+          description: Epoch history
+      summary: Fetch epoch history
+      tags:
+      - Other
+  /alias:
+    get:
+      description: Fetch alias data. Aliases represent an address to metadata mapping
+        that includes human readable address names and token metadata (such as ticker,
+        website, ...). It includes all tokens from the official Solana token list,
+        most of the known programs and DEX markets.
+      operationId: fetchAlias
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_14'
+          description: Alias
+      summary: Fetch alias
+      tags:
+      - Other
+  /non-validators:
+    get:
+      description: Fetch non validator nodes
+      operationId: fetchNonValidators
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200_15'
+                type: array
+          description: Non validators
+      summary: Fetch non validator nodes
+      tags:
+      - Other
+  /cluster-time:
+    get:
+      description: Fetch current cluster time
+      operationId: fetchClusterTime
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                format: timestamp
+                type: integer
+          description: Cluster time
+      summary: Fetch current cluster time
+      tags:
+      - Other
+  /market-chart-data:
+    get:
+      description: Fetch market chart data
+      operationId: fetchMarketChardData
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/inline_response_200_16'
+                type: array
+          description: Chart data
+      summary: Fetch market chart data
+      tags:
+      - Other
+  /tokens:
+    get:
+      description: Fetch tokens ordered by holders
+      operationId: fetchTokens
+      parameters:
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Sort by param
+        explode: true
+        in: query
+        name: sort
+        required: false
+        schema:
+          enum:
+          - name
+          - price
+          - volume
+          - change
+          - marketcap
+          - holders
+          - swapVolume
+          - swapPrice
+          - marketVolume
+          - marketPrice
+          type: string
+        style: form
+      - description: Sort direction param
+        explode: true
+        in: query
+        name: dir
+        required: false
+        schema:
+          enum:
+          - asc
+          - desc
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_17'
+          description: Tokens
+      summary: Fetch tokens
+      tags:
+      - Token
+  /token/{mint}/holders:
+    get:
+      description: Fetch token holders ordered by amount. Please note that this endpoint
+        only returns appropriate holders for known tokens (the ones in the official
+        Solana token list).
+      operationId: fetchTokenHolders
+      parameters:
+      - description: Mint address
+        explode: false
+        in: path
+        name: mint
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TokenHolder'
+                type: array
+          description: Token holders
+      summary: Fetch token holders
+      tags:
+      - Token
+  /token/{mint}/transfers:
+    get:
+      description: Fetch token transfers ordered by id
+      operationId: fetchTokenTransfers
+      parameters:
+      - description: Mint address
+        explode: false
+        in: path
+        name: mint
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Token transfers cursor (blocknumber,txindex)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TokenTransfer'
+                type: array
+          description: Token transfers
+      summary: Fetch token transfers
+      tags:
+      - Token
+  /token/{pubkey}:
+    get:
+      description: Fetch token by pubkey
+      operationId: fetchToken
+      parameters:
+      - description: Token address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: Token found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Token not found
+      summary: Fetch single token
+      tags:
+      - Token
+  /token-accounts/{owner}:
+    get:
+      description: Fetch token accounts owned by owner ordered by amount
+      operationId: fetchTokenAccounts
+      parameters:
+      - description: Owner address
+        explode: false
+        in: path
+        name: owner
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TokenHolder'
+                type: array
+          description: Token accounts
+      summary: Fetch token accounts owned by owner
+      tags:
+      - Token
+  /token-transfers/{owner}:
+    get:
+      description: Fetch token transfers by owner ordered by id
+      operationId: fetchTokenTransfersByOwner
+      parameters:
+      - description: Owner address
+        explode: false
+        in: path
+        name: owner
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Token transfers cursor (blocknumber,txindex)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TokenTransfer'
+                type: array
+          description: Token transfers
+      summary: Fetch token transfers by owner
+      tags:
+      - Token
+  /accounts:
+    get:
+      description: Fetch accounts ordered by balance
+      operationId: fetchAccounts
+      parameters:
+      - description: Result limit (max 1000)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SimpleAccount'
+                type: array
+          description: Accounts
+      summary: Fetch accounts
+      tags:
+      - Account
+  /wealth:
+    get:
+      description: Fetch wealth distribution metrics
+      operationId: fetchWealthMetrics
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wealth'
+          description: Accounts
+      summary: Fetch wealth distribution metrics
+      tags:
+      - Account
+  /account/{pubkey}/transactions:
+    get:
+      description: Fetch account transactions ordered by block number
+      operationId: fetchAccountTransactions
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 1000)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Transaction cursor (blocknumber,txindex)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Transaction'
+                type: array
+          description: Account transactions
+      summary: Fetch account transactions
+      tags:
+      - Account
+  /account/{pubkey}/stakes:
+    get:
+      description: Fetch stake accounts owned by the pubkey
+      operationId: fetchStakeAccounts
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 1000)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/StakeAccount'
+                type: array
+          description: Stake accounts
+      summary: Fetch stake accounts
+      tags:
+      - Account
+  /account/{stake_pubkey}/stake-rewards:
+    get:
+      description: Fetch stake account rewards by the stake account pubkey
+      operationId: fetchStakeAccountRewards
+      parameters:
+      - description: Stake account address
+        explode: false
+        in: path
+        name: stake_pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Epoch cursor
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/StakeAccountReward'
+                type: array
+          description: Stake account rewards
+      summary: Fetch stake account rewards
+      tags:
+      - Account
+  /account/{pubkey}/tokens:
+    get:
+      description: Fetch account tokens
+      operationId: fetchAccountTokens
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountToken'
+                type: array
+          description: Account tokens
+      summary: Fetch account tokens
+      tags:
+      - Account
+  /account/{pubkey}/token-transfers:
+    get:
+      description: Fetch account token transfers ordered by block number
+      operationId: fetchAccountTokenTransfers
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Token transfers cursor (blocknumber,txindex)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      - description: Filter inner instructions
+        explode: true
+        in: query
+        name: inner
+        required: false
+        schema:
+          format: boolean
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountTokenTransfer'
+                type: array
+          description: Account token transfers
+      summary: Fetch account token transfers
+      tags:
+      - Account
+  /account/{pubkey}/serum-instructions:
+    get:
+      description: Fetch account serum instructions ordered by block number
+      operationId: fetchAccountSerumInstructions
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Serum instruction cursor (blocknumber,txindex,index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>,<instructionindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountSerumInstruction'
+                type: array
+          description: Account serum instructions
+      summary: Fetch account serum instructions
+      tags:
+      - Account
+  /account/{pubkey}/serum-orders:
+    get:
+      description: Fetch account serum orders ordered by block number
+      operationId: fetchAccountSerumOrders
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Serum orders cursor (blocknumber,txindex)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountSerumOrder'
+                type: array
+          description: Account serum orders
+      summary: Fetch account serum orders
+      tags:
+      - Account
+  /account/{pubkey}/swap-instructions:
+    get:
+      description: Fetch account swap instructions ordered by block number
+      operationId: fetchAccountSwapInstructions
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Result limit (max 100)
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Result offset
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Swap instruction cursor (blocknumber,txindex,index)
+        explode: true
+        in: query
+        name: cursor
+        required: false
+        schema:
+          format: <blocknumber>,<txindex>,<instructionindex>
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountSwapInstruction'
+                type: array
+          description: Account swap instructions
+      summary: Fetch account swap instructions
+      tags:
+      - Account
+  /account/{pubkey}:
+    get:
+      description: Fetch account data
+      operationId: fetchAccount
+      parameters:
+      - description: Account address
+        explode: false
+        in: path
+        name: pubkey
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: Account found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Account not found
+      summary: Fetch account data
+      tags:
+      - Account
+components:
+  schemas:
+    Block:
+      example:
+        parentslot: 6
+        blockhash: blockhash
+        blocktime:
+          absolute: 1
+          relative: 5
+        programstats:
+        - instructions: '{}'
+          count: 4
+          programId:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        - instructions: '{}'
+          count: 4
+          programId:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        proposer: proposer
+        previousblockhash: previousblockhash
+        proposerData:
+          image: image
+          website: website
+          name: name
+          nodePubkey: nodePubkey
+        blocknumber: 0
+        metrics:
+          instructions: 9
+          txcount: 5
+          innerinstructions: 2
+          sucessfultxs: 3
+          failedtxs: 2
+          totalfees: 7
+        ondemand: true
+        rewards: '{}'
+      properties:
+        blocknumber:
+          format: int64
+          type: integer
+        blockhash:
+          type: string
+        previousblockhash:
+          type: string
+        parentslot:
+          format: int64
+          type: integer
+        blocktime:
+          $ref: '#/components/schemas/Timestamp'
+        metrics:
+          $ref: '#/components/schemas/Block_metrics'
+        programstats:
+          items:
+            $ref: '#/components/schemas/Block_programstats'
+          type: array
+        rewards:
+          type: object
+        proposer:
+          type: string
+        proposerData:
+          $ref: '#/components/schemas/Block_proposerData'
+        ondemand:
+          type: boolean
+      type: object
+    Transaction:
+      example:
+        instructions:
+        - raw:
+            programIdIndex: 7
+            data: data
+            accounts:
+            - 2
+            - 2
+          parsed: '{}'
+        - raw:
+            programIdIndex: 7
+            data: data
+            accounts:
+            - 2
+            - 2
+          parsed: '{}'
+        index: 6
+        transactionHash: transactionHash
+        signatures:
+        - signatures
+        - signatures
+        smart:
+        - type: type
+          value: value
+        - type: type
+          value: value
+        valid: true
+        blocktime:
+          absolute: 1
+          relative: 5
+        meta:
+          err: '{}'
+          postBalances:
+          - 2
+          - 2
+          fee: 9
+          preBalances:
+          - 3
+          - 3
+          logMessages:
+          - logMessages
+          - logMessages
+          status: '{}'
+        blockNumber: 0
+        header:
+          numRequiredSignatures: 1
+          numReadonlySignedAccounts: 5
+          numReadonlyUnsignedAccounts: 5
+        accounts:
+        - program: true
+          account:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          writable: true
+          signer: true
+        - program: true
+          account:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          writable: true
+          signer: true
+        ondemand: true
+        mostImportantInstruction:
+          name: name
+          weight: 4.145608
+          index: 7
+        recentBlockhash: recentBlockhash
+      properties:
+        transactionHash:
+          type: string
+        blockNumber:
+          format: int64
+          type: integer
+        index:
+          format: int64
+          type: integer
+        accounts:
+          items:
+            $ref: '#/components/schemas/Transaction_accounts'
+          type: array
+        header:
+          $ref: '#/components/schemas/Transaction_header'
+        instructions:
+          items:
+            $ref: '#/components/schemas/Transaction_instructions'
+          type: array
+        recentBlockhash:
+          type: string
+        signatures:
+          items:
+            type: string
+          type: array
+        meta:
+          $ref: '#/components/schemas/Transaction_meta'
+        valid:
+          type: boolean
+        blocktime:
+          $ref: '#/components/schemas/Timestamp'
+        mostImportantInstruction:
+          $ref: '#/components/schemas/Transaction_mostImportantInstruction'
+        smart:
+          items:
+            $ref: '#/components/schemas/Transaction_smart'
+          type: array
+        ondemand:
+          type: boolean
+      type: object
+    Market:
+      example:
+        meta:
+          quoteTokenDecimals: 1
+          marketPrice: 5.962134
+          baseLotSize: baseLotSize
+          baseTokenDecimals: 6
+          orderBooks:
+            asks:
+            - - 5.637377
+              - 5.637377
+            - - 5.637377
+              - 5.637377
+            bids:
+            - - 2.302136
+              - 2.302136
+            - - 2.302136
+              - 2.302136
+          volumes:
+          - 7.386282
+          - 7.386282
+          volume24h: 1.2315135
+          liquidity:
+            usdBase: 9.301444
+            usdQuote: 3.6160767
+            total: 7.0614014
+            quote:
+              amount: 2
+              decimals: 4
+            base:
+              amount: 2
+              decimals: 4
+          volume:
+            usdBase: 9.301444
+            usdQuote: 3.6160767
+            total: 7.0614014
+            quote:
+              amount: 2
+              decimals: 4
+            base:
+              amount: 2
+              decimals: 4
+          baseVault:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          asks:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          bids:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          quoteLotSize: quoteLotSize
+          name: name
+          quoteVault:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        quotemint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        basemint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        basemint:
+          $ref: '#/components/schemas/Address'
+        quotemint:
+          $ref: '#/components/schemas/Address'
+        meta:
+          $ref: '#/components/schemas/Market_meta'
+      type: object
+    Token:
+      example:
+        lamports: 7
+        pricedata:
+          percent_change_1h: 5.637377
+          last_updated: 2
+          price: 1.4658129
+          volume_24h: 5.962134
+        ticker: ticker
+        supply: 9
+        cmcid: 6
+        holders: 2
+        meta:
+          marketPrice: 1.0246457
+          swapVolume: 4.145608
+          marketVolume: 1.2315135
+          swapPrice: 7.386282
+          freezeAuthority: freezeAuthority
+          mintAuthority: mintAuthority
+          url: url
+        decimals: 3
+        name: name
+        logo: logo
+        initialized: true
+        ondemand: true
+        pubkey: pubkey
+      properties:
+        name:
+          type: string
+        ticker:
+          type: string
+        logo:
+          type: string
+        cmcid:
+          type: integer
+        pricedata:
+          $ref: '#/components/schemas/Token_pricedata'
+        pubkey:
+          type: string
+        lamports:
+          format: int64
+          type: integer
+        supply:
+          type: integer
+        decimals:
+          type: integer
+        initialized:
+          type: boolean
+        holders:
+          type: integer
+        meta:
+          $ref: '#/components/schemas/Token_meta'
+        ondemand:
+          type: boolean
+      type: object
+    TokenHolder:
+      example:
+        lamports: 0
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        mint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        amount: 6
+        meta:
+          delegate:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          native: true
+          delegatedAmount: 5
+          closeAuthority:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        state: 1
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        lamports:
+          format: int64
+          type: integer
+        mint:
+          $ref: '#/components/schemas/Address'
+        owner:
+          $ref: '#/components/schemas/Address'
+        amount:
+          type: integer
+        state:
+          type: integer
+        meta:
+          $ref: '#/components/schemas/TokenHolder_meta'
+      type: object
+    TokenTransfer:
+      example:
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        amount: 1
+        destination:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        index: 5
+        blocknumber: 6
+        source:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        valid: true
+        mint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        innerinstruction: true
+        decimals: 5
+        id: 0
+        transactionhash: transactionhash
+        timestamp:
+          absolute: 1
+          relative: 5
+      properties:
+        id:
+          type: integer
+        blocknumber:
+          type: integer
+        transactionhash:
+          type: string
+        mint:
+          $ref: '#/components/schemas/Address'
+        amount:
+          type: integer
+        source:
+          $ref: '#/components/schemas/Address'
+        destination:
+          $ref: '#/components/schemas/Address'
+        decimals:
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        valid:
+          type: boolean
+        innerinstruction:
+          type: boolean
+        index:
+          type: integer
+        owner:
+          $ref: '#/components/schemas/Address'
+      type: object
+    TokenSwap:
+      example:
+        tokenprogram:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        meta:
+          volume:
+            total: 6.0274563
+            nativeTokenA:
+              amount: 2
+              decimals: 4
+            nativeTokenB:
+              amount: 2
+              decimals: 4
+            usdTokenA: 1.4658129
+            usdTokenB: 5.962134
+          volumes:
+          - 7.0614014
+          - 7.0614014
+          volume24h: 9.301444
+          liquidity:
+            total: 6.0274563
+            nativeTokenA:
+              amount: 2
+              decimals: 4
+            nativeTokenB:
+              amount: 2
+              decimals: 4
+            usdTokenA: 1.4658129
+            usdTokenB: 5.962134
+          prices:
+            BperA: 2.302136
+            AperB: 5.637377
+          supply:
+            amount: 2
+            decimals: 4
+        name: name
+        poolmint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        tokenbmint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        tokena:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        tokenb:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        tokenamint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        name:
+          type: string
+        poolmint:
+          $ref: '#/components/schemas/Address'
+        tokenamint:
+          $ref: '#/components/schemas/Address'
+        tokenbmint:
+          $ref: '#/components/schemas/Address'
+        tokena:
+          $ref: '#/components/schemas/Address'
+        tokenb:
+          $ref: '#/components/schemas/Address'
+        tokenprogram:
+          $ref: '#/components/schemas/Address'
+        meta:
+          $ref: '#/components/schemas/TokenSwap_meta'
+      type: object
+    Account:
+      example:
+        type: type
+        value:
+          extended: '{}'
+          base:
+            owner:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            rentEpoch: 6
+            address:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            balance: 0
+            dataSize: 1
+            executable: true
+      properties:
+        type:
+          type: string
+        value:
+          $ref: '#/components/schemas/Account_value'
+      type: object
+    AccountToken:
+      example:
+        mint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        amount: 0
+        address:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        decimals: 6
+      properties:
+        mint:
+          $ref: '#/components/schemas/Address'
+        amount:
+          type: integer
+        address:
+          $ref: '#/components/schemas/Address'
+        decimals:
+          type: integer
+      type: object
+    AccountTokenTransfer:
+      example:
+        valid: true
+        mint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        amount: 6
+        decimals: 5
+        destination:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        blocknumber: 0
+        source:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        inner: true
+        txindex: 1
+        txhash: txhash
+        timestamp:
+          absolute: 1
+          relative: 5
+      properties:
+        blocknumber:
+          type: integer
+        txhash:
+          type: string
+        mint:
+          $ref: '#/components/schemas/Address'
+        valid:
+          type: boolean
+        amount:
+          type: integer
+        source:
+          $ref: '#/components/schemas/Address'
+        destination:
+          $ref: '#/components/schemas/Address'
+        inner:
+          type: boolean
+        txindex:
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        decimals:
+          type: integer
+      type: object
+    AccountSerumInstruction:
+      example:
+        market:
+          baseMint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          quoteMint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          name: name
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        valid: true
+        instruction: instruction
+        index: 1
+        blocknumber: 6
+        instructiondata: '{}'
+        id: 0
+        transactionhash: transactionhash
+        ondemand: true
+        txindex: 5
+        timestamp:
+          absolute: 1
+          relative: 5
+      properties:
+        id:
+          type: integer
+        blocknumber:
+          type: integer
+        transactionhash:
+          type: string
+        market:
+          $ref: '#/components/schemas/AccountSerumInstruction_market'
+        owner:
+          $ref: '#/components/schemas/Address'
+        instruction:
+          type: string
+        instructiondata:
+          type: object
+        valid:
+          type: boolean
+        index:
+          type: integer
+        txindex:
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        ondemand:
+          type: boolean
+      type: object
+    AccountSerumOrder:
+      example:
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        side: side
+        openorders:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        blocknumber: 6
+        type: type
+        pricelimit: 2
+        market:
+          baseMint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          baseDecimals: 5
+          quoteMint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          quoteDecimals: 5
+          currentPrice: 1.4658129
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        valid: true
+        price: 2.027123
+        qty: 4.145608
+        processedat: 9
+        id: 0
+        transactionhash: transactionhash
+        ondemand: true
+        txindex: 3
+        maxquantity: 7
+        status: status
+        timestamp:
+          absolute: 1
+          relative: 5
+      properties:
+        id:
+          type: integer
+        blocknumber:
+          type: integer
+        transactionhash:
+          type: string
+        market:
+          $ref: '#/components/schemas/AccountSerumOrder_market'
+        owner:
+          $ref: '#/components/schemas/Address'
+        openorders:
+          $ref: '#/components/schemas/Address'
+        side:
+          type: string
+        type:
+          type: string
+        pricelimit:
+          type: integer
+        maxquantity:
+          type: integer
+        valid:
+          type: boolean
+        status:
+          type: string
+        processedat:
+          format: timestamp
+          type: integer
+        txindex:
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        ondemand:
+          type: boolean
+        price:
+          format: float
+          type: number
+        qty:
+          format: float
+          type: number
+      type: object
+    AccountSwapInstruction:
+      example:
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        valid: true
+        tokenswap:
+          name: name
+          tokenA:
+            mint:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            decimals: 1
+          poolToken:
+            decimals: 5
+          tokenB:
+            mint:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            decimals: 1
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        instruction: instruction
+        index: 5
+        blocknumber: 6
+        instructiondata: '{}'
+        id: 0
+        transactionhash: transactionhash
+        ondemand: true
+        txindex: 2
+        timestamp:
+          absolute: 1
+          relative: 5
+      properties:
+        id:
+          type: integer
+        blocknumber:
+          type: integer
+        transactionhash:
+          type: string
+        tokenswap:
+          $ref: '#/components/schemas/AccountSwapInstruction_tokenswap'
+        owner:
+          $ref: '#/components/schemas/Address'
+        instruction:
+          type: string
+        instructiondata:
+          type: object
+        valid:
+          type: boolean
+        index:
+          type: integer
+        txindex:
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        ondemand:
+          type: boolean
+      type: object
+    SimpleAccount:
+      example:
+        balance: 0
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        balance:
+          type: integer
+      type: object
+    StakeAccount:
+      example:
+        lamports: 3
+        data:
+          lockup:
+            custodian: custodian
+            epoch: 1
+            unix_timestamp: 7
+          stake:
+            credits_observed: 1
+            delegation:
+              stake: 1
+              deactivation_epoch: 6
+              validatorInfo:
+                image: image
+                website: website
+                name: name
+                nodePubkey: nodePubkey
+              voter_pubkey: voter_pubkey
+              activation_epoch: 1
+              warmup_cooldown_rate: 7
+          meta:
+            authorized:
+              staker: staker
+              withdrawer: withdrawer
+            rent_exempt_reserve: 4
+          state: 2
+        pubkey: pubkey
+      properties:
+        pubkey:
+          type: string
+        lamports:
+          format: int64
+          type: integer
+        data:
+          $ref: '#/components/schemas/StakeAccount_data'
+      type: object
+    Validator:
+      example:
+        slots:
+        - - '{}'
+          - '{}'
+        - - '{}'
+          - '{}'
+        historic:
+        - stake: 8
+          delegators: 9
+          timestamp: timestamp
+        - stake: 8
+          delegators: 9
+          timestamp: timestamp
+        validator:
+          website: website
+          stakePercentage: 6
+          epochCredits:
+          - 5
+          - 5
+          lastVote: 5
+          epochVoteAccount: true
+          pictureURL: pictureURL
+          delegatorCount: 4
+          votePubkey: votePubkey
+          moniker: moniker
+          nodePubkey: nodePubkey
+          rootSlot: 2
+          delegatingStakeAccounts:
+          - lamports: 3
+            data:
+              lockup:
+                custodian: custodian
+                epoch: 1
+                unix_timestamp: 7
+              stake:
+                credits_observed: 1
+                delegation:
+                  stake: 1
+                  deactivation_epoch: 6
+                  validatorInfo:
+                    image: image
+                    website: website
+                    name: name
+                    nodePubkey: nodePubkey
+                  voter_pubkey: voter_pubkey
+                  activation_epoch: 1
+                  warmup_cooldown_rate: 7
+              meta:
+                authorized:
+                  staker: staker
+                  withdrawer: withdrawer
+                rent_exempt_reserve: 4
+              state: 2
+            pubkey: pubkey
+          - lamports: 3
+            data:
+              lockup:
+                custodian: custodian
+                epoch: 1
+                unix_timestamp: 7
+              stake:
+                credits_observed: 1
+                delegation:
+                  stake: 1
+                  deactivation_epoch: 6
+                  validatorInfo:
+                    image: image
+                    website: website
+                    name: name
+                    nodePubkey: nodePubkey
+                  voter_pubkey: voter_pubkey
+                  activation_epoch: 1
+                  warmup_cooldown_rate: 7
+              meta:
+                authorized:
+                  staker: staker
+                  withdrawer: withdrawer
+                rent_exempt_reserve: 4
+              state: 2
+            pubkey: pubkey
+          version: version
+          activatedStake: 0
+          commission: 1
+          location:
+            eu: eu
+            ll:
+            - 9
+            - 9
+            area: 6
+            country: country
+            city: city
+            timezone: timezone
+            metro: 9
+            range:
+            - 5
+            - 5
+            region: region
+          details: details
+          asn:
+            code: code
+            organization: organization
+          blockProduction:
+            skippedSlots: 9
+            leaderSlots: 7
+        latestBlocks:
+        - blocktime:
+            absolute: 1
+            relative: 5
+          proposer: proposer
+          blocknumber: 6
+          metrics:
+            instructions: 2
+            txcount: 3
+            innerinstructions: 6
+            totalvaluemoved: 5
+            sucessfultxs: 6
+            failedtxs: 6
+            totalfees: 1
+        - blocktime:
+            absolute: 1
+            relative: 5
+          proposer: proposer
+          blocknumber: 6
+          metrics:
+            instructions: 2
+            txcount: 3
+            innerinstructions: 6
+            totalvaluemoved: 5
+            sucessfultxs: 6
+            failedtxs: 6
+            totalfees: 1
+      properties:
+        validator:
+          $ref: '#/components/schemas/Validator_validator'
+        slots:
+          items:
+            items:
+              properties:
+                relativeSlot:
+                  type: integer
+                absoluteSlot:
+                  type: integer
+                confirmedBlock:
+                  type: boolean
+              type: object
+            type: array
+          type: array
+        historic:
+          items:
+            $ref: '#/components/schemas/Validator_historic'
+          type: array
+        latestBlocks:
+          items:
+            $ref: '#/components/schemas/Validator_latestBlocks'
+          type: array
+      type: object
+    Wealth:
+      example:
+        wealth:
+          price: 5.962134
+          groupedBalances:
+          - addresses:
+              percentage: percentage
+              count: 1
+            balances:
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+            span:
+              from: 0
+              to: 6
+          - addresses:
+              percentage: percentage
+              count: 1
+            balances:
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+            span:
+              from: 0
+              to: 6
+          distribution:
+            "11_50":
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+            "51_100":
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+            rest:
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+            total:
+              stake: stake
+              system: system
+              sum: sum
+              spl: spl
+            "0_10":
+              percentage: percentage
+              value: value
+              usdValue: usdValue
+      properties:
+        wealth:
+          $ref: '#/components/schemas/Wealth_wealth'
+      type: object
+    Address:
+      example:
+        ticker: ticker
+        cmcId: cmcId
+        address: address
+        name: name
+        logo: logo
+      properties:
+        address:
+          type: string
+        name:
+          type: string
+        logo:
+          type: string
+        ticker:
+          type: string
+        cmcId:
+          type: string
+      type: object
+    Amount:
+      example:
+        amount: 2
+        decimals: 4
+      properties:
+        amount:
+          type: integer
+        decimals:
+          type: integer
+      type: object
+    StakeAccountReward:
+      example:
+        postBalance: postBalance
+        amount: amount
+        percentChange: 1
+        apr: 5
+        effectiveSlot: 6
+        epoch: 0
+      properties:
+        epoch:
+          type: integer
+        effectiveSlot:
+          type: integer
+        amount:
+          type: string
+        postBalance:
+          type: string
+        percentChange:
+          type: integer
+        apr:
+          type: integer
+      type: object
+    Timestamp:
+      example:
+        absolute: 1
+        relative: 5
+      properties:
+        absolute:
+          type: integer
+        relative:
+          type: integer
+      type: object
+    ApiError:
+      properties:
+        err:
+          type: string
+      type: object
+    inline_response_200:
+      example:
+        totalcount: 0
+        programId:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        programId:
+          $ref: '#/components/schemas/Address'
+        totalcount:
+          format: int64
+          type: integer
+      type: object
+    inline_response_200_1:
+      example:
+        blocknumber: 6
+        ondemand: true
+        txindex: 0
+        txhash: txhash
+      properties:
+        txhash:
+          type: string
+        txindex:
+          type: integer
+        blocknumber:
+          type: integer
+        ondemand:
+          type: boolean
+      type: object
+    inline_response_200_2:
+      example:
+        data:
+        - instructions:
+          - raw:
+              programIdIndex: 7
+              data: data
+              accounts:
+              - 2
+              - 2
+            parsed: '{}'
+          - raw:
+              programIdIndex: 7
+              data: data
+              accounts:
+              - 2
+              - 2
+            parsed: '{}'
+          index: 6
+          transactionHash: transactionHash
+          signatures:
+          - signatures
+          - signatures
+          smart:
+          - type: type
+            value: value
+          - type: type
+            value: value
+          valid: true
+          blocktime:
+            absolute: 1
+            relative: 5
+          meta:
+            err: '{}'
+            postBalances:
+            - 2
+            - 2
+            fee: 9
+            preBalances:
+            - 3
+            - 3
+            logMessages:
+            - logMessages
+            - logMessages
+            status: '{}'
+          blockNumber: 0
+          header:
+            numRequiredSignatures: 1
+            numReadonlySignedAccounts: 5
+            numReadonlyUnsignedAccounts: 5
+          accounts:
+          - program: true
+            account:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            writable: true
+            signer: true
+          - program: true
+            account:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            writable: true
+            signer: true
+          ondemand: true
+          mostImportantInstruction:
+            name: name
+            weight: 4.145608
+            index: 7
+          recentBlockhash: recentBlockhash
+        - instructions:
+          - raw:
+              programIdIndex: 7
+              data: data
+              accounts:
+              - 2
+              - 2
+            parsed: '{}'
+          - raw:
+              programIdIndex: 7
+              data: data
+              accounts:
+              - 2
+              - 2
+            parsed: '{}'
+          index: 6
+          transactionHash: transactionHash
+          signatures:
+          - signatures
+          - signatures
+          smart:
+          - type: type
+            value: value
+          - type: type
+            value: value
+          valid: true
+          blocktime:
+            absolute: 1
+            relative: 5
+          meta:
+            err: '{}'
+            postBalances:
+            - 2
+            - 2
+            fee: 9
+            preBalances:
+            - 3
+            - 3
+            logMessages:
+            - logMessages
+            - logMessages
+            status: '{}'
+          blockNumber: 0
+          header:
+            numRequiredSignatures: 1
+            numReadonlySignedAccounts: 5
+            numReadonlyUnsignedAccounts: 5
+          accounts:
+          - program: true
+            account:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            writable: true
+            signer: true
+          - program: true
+            account:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            writable: true
+            signer: true
+          ondemand: true
+          mostImportantInstruction:
+            name: name
+            weight: 4.145608
+            index: 7
+          recentBlockhash: recentBlockhash
+        totalPages: 0
+      properties:
+        totalPages:
+          type: integer
+        data:
+          items:
+            $ref: '#/components/schemas/Transaction'
+          type: array
+      type: object
+    inline_response_200_3:
+      example:
+        stake: 6
+        delegators: 1
+        validator: validator
+        id: 0
+        timestamp: timestamp
+      properties:
+        id:
+          format: int64
+          type: integer
+        validator:
+          type: string
+        stake:
+          format: int64
+          type: integer
+        delegators:
+          format: int64
+          type: integer
+        timestamp:
+          format: timestamp
+          type: string
+      type: object
+    validatornodepubkeyslots_slots:
+      example:
+        relativeSlot: 0
+        absoluteSlot: 6
+        confirmedBlock: true
+      properties:
+        relativeSlot:
+          type: integer
+        absoluteSlot:
+          type: integer
+        confirmedBlock:
+          type: boolean
+      type: object
+    inline_response_200_4:
+      example:
+        slots:
+        - relativeSlot: 0
+          absoluteSlot: 6
+          confirmedBlock: true
+        - relativeSlot: 0
+          absoluteSlot: 6
+          confirmedBlock: true
+        validator: validator
+      properties:
+        validator:
+          type: string
+        slots:
+          items:
+            $ref: '#/components/schemas/validatornodepubkeyslots_slots'
+          type: array
+      type: object
+    inline_response_200_5:
+      example:
+        data:
+        - meta:
+            quoteTokenDecimals: 1
+            marketPrice: 5.962134
+            baseLotSize: baseLotSize
+            baseTokenDecimals: 6
+            orderBooks:
+              asks:
+              - - 5.637377
+                - 5.637377
+              - - 5.637377
+                - 5.637377
+              bids:
+              - - 2.302136
+                - 2.302136
+              - - 2.302136
+                - 2.302136
+            volumes:
+            - 7.386282
+            - 7.386282
+            volume24h: 1.2315135
+            liquidity:
+              usdBase: 9.301444
+              usdQuote: 3.6160767
+              total: 7.0614014
+              quote:
+                amount: 2
+                decimals: 4
+              base:
+                amount: 2
+                decimals: 4
+            volume:
+              usdBase: 9.301444
+              usdQuote: 3.6160767
+              total: 7.0614014
+              quote:
+                amount: 2
+                decimals: 4
+              base:
+                amount: 2
+                decimals: 4
+            baseVault:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            asks:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            bids:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            quoteLotSize: quoteLotSize
+            name: name
+            quoteVault:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+          quotemint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          basemint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        - meta:
+            quoteTokenDecimals: 1
+            marketPrice: 5.962134
+            baseLotSize: baseLotSize
+            baseTokenDecimals: 6
+            orderBooks:
+              asks:
+              - - 5.637377
+                - 5.637377
+              - - 5.637377
+                - 5.637377
+              bids:
+              - - 2.302136
+                - 2.302136
+              - - 2.302136
+                - 2.302136
+            volumes:
+            - 7.386282
+            - 7.386282
+            volume24h: 1.2315135
+            liquidity:
+              usdBase: 9.301444
+              usdQuote: 3.6160767
+              total: 7.0614014
+              quote:
+                amount: 2
+                decimals: 4
+              base:
+                amount: 2
+                decimals: 4
+            volume:
+              usdBase: 9.301444
+              usdQuote: 3.6160767
+              total: 7.0614014
+              quote:
+                amount: 2
+                decimals: 4
+              base:
+                amount: 2
+                decimals: 4
+            baseVault:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            asks:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            bids:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+            quoteLotSize: quoteLotSize
+            name: name
+            quoteVault:
+              ticker: ticker
+              cmcId: cmcId
+              address: address
+              name: name
+              logo: logo
+          quotemint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          basemint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        totalPages: 0
+      properties:
+        totalPages:
+          type: integer
+        data:
+          items:
+            $ref: '#/components/schemas/Market'
+          type: array
+      type: object
+    inline_response_200_6:
+      example:
+        data:
+        - tokenprogram:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          meta:
+            volume:
+              total: 6.0274563
+              nativeTokenA:
+                amount: 2
+                decimals: 4
+              nativeTokenB:
+                amount: 2
+                decimals: 4
+              usdTokenA: 1.4658129
+              usdTokenB: 5.962134
+            volumes:
+            - 7.0614014
+            - 7.0614014
+            volume24h: 9.301444
+            liquidity:
+              total: 6.0274563
+              nativeTokenA:
+                amount: 2
+                decimals: 4
+              nativeTokenB:
+                amount: 2
+                decimals: 4
+              usdTokenA: 1.4658129
+              usdTokenB: 5.962134
+            prices:
+              BperA: 2.302136
+              AperB: 5.637377
+            supply:
+              amount: 2
+              decimals: 4
+          name: name
+          poolmint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenbmint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokena:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenb:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenamint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        - tokenprogram:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          meta:
+            volume:
+              total: 6.0274563
+              nativeTokenA:
+                amount: 2
+                decimals: 4
+              nativeTokenB:
+                amount: 2
+                decimals: 4
+              usdTokenA: 1.4658129
+              usdTokenB: 5.962134
+            volumes:
+            - 7.0614014
+            - 7.0614014
+            volume24h: 9.301444
+            liquidity:
+              total: 6.0274563
+              nativeTokenA:
+                amount: 2
+                decimals: 4
+              nativeTokenB:
+                amount: 2
+                decimals: 4
+              usdTokenA: 1.4658129
+              usdTokenB: 5.962134
+            prices:
+              BperA: 2.302136
+              AperB: 5.637377
+            supply:
+              amount: 2
+              decimals: 4
+          name: name
+          poolmint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenbmint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokena:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenb:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          pubkey:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          tokenamint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+        totalPages: 0
+      properties:
+        totalPages:
+          type: integer
+        data:
+          items:
+            $ref: '#/components/schemas/TokenSwap'
+          type: array
+      type: object
+    inline_response_200_7:
+      example:
+        total: 1.4658129
+        validator: 5.962134
+        epoch: 0
+        foundation: 6.0274563
+      properties:
+        epoch:
+          type: integer
+        foundation:
+          format: float
+          type: number
+        total:
+          format: float
+          type: number
+        validator:
+          format: float
+          type: number
+      type: object
+    inline_response_200_8:
+      example:
+        circulating: 6
+        total: 0
+        nonCirculating: 1
+      properties:
+        total:
+          type: integer
+        circulating:
+          type: integer
+        nonCirculating:
+          type: integer
+      type: object
+    inline_response_200_9:
+      example:
+        effective: 6
+        deactivating: 5
+        epoch: 0
+        activating: 1
+      properties:
+        epoch:
+          type: integer
+        effective:
+          type: integer
+        activating:
+          type: integer
+        deactivating:
+          type: integer
+      type: object
+    inline_response_200_10:
+      example:
+        currentSlot: 5
+        boundaries:
+          start: 0
+          end: 6
+        networkLag: 5
+        window: 1
+      properties:
+        boundaries:
+          $ref: '#/components/schemas/inline_response_200_10_boundaries'
+        window:
+          type: integer
+        networkLag:
+          type: integer
+        currentSlot:
+          type: integer
+      type: object
+    inline_response_200_11:
+      example:
+        lastNetworkSlot: 6
+        lastEpochInfoSync: 5
+        lastSyncedSlot: 0
+        networkLag: 1
+        laggingBehind: 5
+      properties:
+        lastSyncedSlot:
+          type: integer
+        lastNetworkSlot:
+          type: integer
+        networkLag:
+          type: integer
+        lastEpochInfoSync:
+          type: integer
+        laggingBehind:
+          type: integer
+      type: object
+    inline_response_200_12:
+      example:
+        apy: 0
+      properties:
+        apy:
+          type: integer
+      type: object
+    inline_response_200_13:
+      example:
+        epoch: 0
+      properties:
+        epoch:
+          type: integer
+      type: object
+    inline_response_200_14:
+      example:
+        mintAddress:
+          ticker: ticker
+          cmcId: cmcId
+          meta:
+            url: url
+          name: name
+          logo: logo
+          coingeckoId: coingeckoId
+      properties:
+        mintAddress:
+          $ref: '#/components/schemas/inline_response_200_14_mintAddress'
+      type: object
+    nonvalidators_pubkey:
+      example:
+        address: address
+      properties:
+        address:
+          type: string
+      type: object
+    nonvalidators_location:
+      example:
+        eu: eu
+        ll:
+        - 9
+        - 9
+        area: 6
+        country: country
+        city: city
+        timezone: timezone
+        metro: 9
+        range:
+        - 5
+        - 5
+        region: region
+      properties:
+        range:
+          items:
+            type: integer
+          type: array
+        country:
+          type: string
+        region:
+          type: string
+        eu:
+          type: string
+        timezone:
+          type: string
+        city:
+          type: string
+        ll:
+          items:
+            type: integer
+          type: array
+        metro:
+          type: integer
+        area:
+          type: integer
+      type: object
+    nonvalidators_asn:
+      example:
+        code: 1
+        organization: organization
+      properties:
+        code:
+          type: integer
+        organization:
+          type: string
+      type: object
+    inline_response_200_15:
+      example:
+        shredVersion: 6
+        rpc: rpc
+        featureSet: 0
+        tpu: tpu
+        validator: true
+        gossip: gossip
+        location:
+          eu: eu
+          ll:
+          - 9
+          - 9
+          area: 6
+          country: country
+          city: city
+          timezone: timezone
+          metro: 9
+          range:
+          - 5
+          - 5
+          region: region
+        version: version
+        asn:
+          code: 1
+          organization: organization
+        pubkey:
+          address: address
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/nonvalidators_pubkey'
+        featureSet:
+          type: integer
+        gossip:
+          type: string
+        rpc:
+          type: string
+        shredVersion:
+          type: integer
+        tpu:
+          type: string
+        version:
+          type: string
+        location:
+          $ref: '#/components/schemas/nonvalidators_location'
+        asn:
+          $ref: '#/components/schemas/nonvalidators_asn'
+        validator:
+          type: boolean
+      type: object
+    inline_response_200_16:
+      example:
+        market_cap: 1.4658129
+        price: 0.8008282
+        volume_24h: 6.0274563
+        timestamp: timestamp
+      properties:
+        timestamp:
+          format: timestamp
+          type: string
+        price:
+          format: float
+          type: number
+        volume_24h:
+          format: float
+          type: number
+        market_cap:
+          format: float
+          type: number
+      type: object
+    inline_response_200_17:
+      example:
+        data:
+        - lamports: 7
+          pricedata:
+            percent_change_1h: 5.637377
+            last_updated: 2
+            price: 1.4658129
+            volume_24h: 5.962134
+          ticker: ticker
+          supply: 9
+          cmcid: 6
+          holders: 2
+          meta:
+            marketPrice: 1.0246457
+            swapVolume: 4.145608
+            marketVolume: 1.2315135
+            swapPrice: 7.386282
+            freezeAuthority: freezeAuthority
+            mintAuthority: mintAuthority
+            url: url
+          decimals: 3
+          name: name
+          logo: logo
+          initialized: true
+          ondemand: true
+          pubkey: pubkey
+        - lamports: 7
+          pricedata:
+            percent_change_1h: 5.637377
+            last_updated: 2
+            price: 1.4658129
+            volume_24h: 5.962134
+          ticker: ticker
+          supply: 9
+          cmcid: 6
+          holders: 2
+          meta:
+            marketPrice: 1.0246457
+            swapVolume: 4.145608
+            marketVolume: 1.2315135
+            swapPrice: 7.386282
+            freezeAuthority: freezeAuthority
+            mintAuthority: mintAuthority
+            url: url
+          decimals: 3
+          name: name
+          logo: logo
+          initialized: true
+          ondemand: true
+          pubkey: pubkey
+        totalPages: 0
+      properties:
+        totalPages:
+          type: integer
+        data:
+          items:
+            $ref: '#/components/schemas/Token'
+          type: array
+      type: object
+    Block_metrics:
+      example:
+        instructions: 9
+        txcount: 5
+        innerinstructions: 2
+        sucessfultxs: 3
+        failedtxs: 2
+        totalfees: 7
+      properties:
+        txcount:
+          type: integer
+        failedtxs:
+          type: integer
+        totalfees:
+          type: integer
+        instructions:
+          type: integer
+        sucessfultxs:
+          type: integer
+        innerinstructions:
+          type: integer
+      type: object
+    Block_programstats:
+      example:
+        instructions: '{}'
+        count: 4
+        programId:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        count:
+          type: integer
+        programId:
+          $ref: '#/components/schemas/Address'
+        instructions:
+          type: object
+      type: object
+    Block_proposerData:
+      example:
+        image: image
+        website: website
+        name: name
+        nodePubkey: nodePubkey
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        website:
+          type: string
+        nodePubkey:
+          type: string
+      type: object
+    Transaction_accounts:
+      example:
+        program: true
+        account:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        writable: true
+        signer: true
+      properties:
+        account:
+          $ref: '#/components/schemas/Address'
+        writable:
+          type: boolean
+        signer:
+          type: boolean
+        program:
+          type: boolean
+      type: object
+    Transaction_header:
+      example:
+        numRequiredSignatures: 1
+        numReadonlySignedAccounts: 5
+        numReadonlyUnsignedAccounts: 5
+      properties:
+        numRequiredSignatures:
+          type: integer
+        numReadonlySignedAccounts:
+          type: integer
+        numReadonlyUnsignedAccounts:
+          type: integer
+      type: object
+    Transaction_raw:
+      description: Available if the instruction can't be parsed
+      example:
+        programIdIndex: 7
+        data: data
+        accounts:
+        - 2
+        - 2
+      properties:
+        data:
+          type: string
+        accounts:
+          items:
+            type: integer
+          type: array
+        programIdIndex:
+          type: integer
+      type: object
+    Transaction_instructions:
+      example:
+        raw:
+          programIdIndex: 7
+          data: data
+          accounts:
+          - 2
+          - 2
+        parsed: '{}'
+      properties:
+        parsed:
+          description: Depends on the type of instruction
+          type: object
+        raw:
+          $ref: '#/components/schemas/Transaction_raw'
+      type: object
+    Transaction_meta:
+      example:
+        err: '{}'
+        postBalances:
+        - 2
+        - 2
+        fee: 9
+        preBalances:
+        - 3
+        - 3
+        logMessages:
+        - logMessages
+        - logMessages
+        status: '{}'
+      properties:
+        err:
+          type: object
+        fee:
+          type: integer
+        status:
+          type: object
+        logMessages:
+          items:
+            type: string
+          type: array
+        preBalances:
+          items:
+            format: in64
+            type: integer
+          type: array
+        postBalances:
+          items:
+            format: in64
+            type: integer
+          type: array
+      type: object
+    Transaction_mostImportantInstruction:
+      example:
+        name: name
+        weight: 4.145608
+        index: 7
+      properties:
+        name:
+          type: string
+        weight:
+          format: float
+          type: number
+        index:
+          type: integer
+      type: object
+    Transaction_smart:
+      example:
+        type: type
+        value: value
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+      type: object
+    Market_meta_orderBooks:
+      example:
+        asks:
+        - - 5.637377
+          - 5.637377
+        - - 5.637377
+          - 5.637377
+        bids:
+        - - 2.302136
+          - 2.302136
+        - - 2.302136
+          - 2.302136
+      properties:
+        asks:
+          items:
+            items:
+              format: float
+              type: number
+            type: array
+          type: array
+        bids:
+          items:
+            items:
+              format: float
+              type: number
+            type: array
+          type: array
+      type: object
+    Market_meta_liquidity:
+      example:
+        usdBase: 9.301444
+        usdQuote: 3.6160767
+        total: 7.0614014
+        quote:
+          amount: 2
+          decimals: 4
+        base:
+          amount: 2
+          decimals: 4
+      properties:
+        total:
+          format: float
+          type: number
+        usdBase:
+          format: float
+          type: number
+        usdQuote:
+          format: float
+          type: number
+        base:
+          $ref: '#/components/schemas/Amount'
+        quote:
+          $ref: '#/components/schemas/Amount'
+      type: object
+    Market_meta:
+      example:
+        quoteTokenDecimals: 1
+        marketPrice: 5.962134
+        baseLotSize: baseLotSize
+        baseTokenDecimals: 6
+        orderBooks:
+          asks:
+          - - 5.637377
+            - 5.637377
+          - - 5.637377
+            - 5.637377
+          bids:
+          - - 2.302136
+            - 2.302136
+          - - 2.302136
+            - 2.302136
+        volumes:
+        - 7.386282
+        - 7.386282
+        volume24h: 1.2315135
+        liquidity:
+          usdBase: 9.301444
+          usdQuote: 3.6160767
+          total: 7.0614014
+          quote:
+            amount: 2
+            decimals: 4
+          base:
+            amount: 2
+            decimals: 4
+        volume:
+          usdBase: 9.301444
+          usdQuote: 3.6160767
+          total: 7.0614014
+          quote:
+            amount: 2
+            decimals: 4
+          base:
+            amount: 2
+            decimals: 4
+        baseVault:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        asks:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        bids:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        quoteLotSize: quoteLotSize
+        name: name
+        quoteVault:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        asks:
+          $ref: '#/components/schemas/Address'
+        bids:
+          $ref: '#/components/schemas/Address'
+        baseLotSize:
+          type: string
+        quoteLotSize:
+          type: string
+        baseTokenDecimals:
+          type: integer
+        quoteTokenDecimals:
+          type: integer
+        baseVault:
+          $ref: '#/components/schemas/Address'
+        quoteVault:
+          $ref: '#/components/schemas/Address'
+        name:
+          type: string
+        marketPrice:
+          format: float
+          type: number
+        orderBooks:
+          $ref: '#/components/schemas/Market_meta_orderBooks'
+        liquidity:
+          $ref: '#/components/schemas/Market_meta_liquidity'
+        volume:
+          $ref: '#/components/schemas/Market_meta_liquidity'
+        volumes:
+          items:
+            format: float
+            type: number
+          type: array
+        volume24h:
+          format: float
+          type: number
+      type: object
+    Token_pricedata:
+      example:
+        percent_change_1h: 5.637377
+        last_updated: 2
+        price: 1.4658129
+        volume_24h: 5.962134
+      properties:
+        price:
+          format: float
+          type: number
+        volume_24h:
+          format: float
+          type: number
+        percent_change_1h:
+          format: float
+          type: number
+        last_updated:
+          format: timestamp
+          type: integer
+      type: object
+    Token_meta:
+      example:
+        marketPrice: 1.0246457
+        swapVolume: 4.145608
+        marketVolume: 1.2315135
+        swapPrice: 7.386282
+        freezeAuthority: freezeAuthority
+        mintAuthority: mintAuthority
+        url: url
+      properties:
+        freezeAuthority:
+          type: string
+        mintAuthority:
+          type: string
+        url:
+          type: string
+        swapVolume:
+          format: float
+          type: number
+        swapPrice:
+          format: float
+          type: number
+        marketVolume:
+          format: float
+          type: number
+        marketPrice:
+          format: float
+          type: number
+      type: object
+    TokenHolder_meta:
+      example:
+        delegate:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        native: true
+        delegatedAmount: 5
+        closeAuthority:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        delegate:
+          $ref: '#/components/schemas/Address'
+        native:
+          type: boolean
+        delegatedAmount:
+          type: integer
+        closeAuthority:
+          $ref: '#/components/schemas/Address'
+      type: object
+    TokenSwap_meta_liquidity:
+      example:
+        total: 6.0274563
+        nativeTokenA:
+          amount: 2
+          decimals: 4
+        nativeTokenB:
+          amount: 2
+          decimals: 4
+        usdTokenA: 1.4658129
+        usdTokenB: 5.962134
+      properties:
+        total:
+          format: float
+          type: number
+        usdTokenA:
+          format: float
+          type: number
+        usdTokenB:
+          format: float
+          type: number
+        nativeTokenA:
+          $ref: '#/components/schemas/Amount'
+        nativeTokenB:
+          $ref: '#/components/schemas/Amount'
+      type: object
+    TokenSwap_meta_prices:
+      example:
+        BperA: 2.302136
+        AperB: 5.637377
+      properties:
+        AperB:
+          format: float
+          type: number
+        BperA:
+          format: float
+          type: number
+      type: object
+    TokenSwap_meta:
+      example:
+        volume:
+          total: 6.0274563
+          nativeTokenA:
+            amount: 2
+            decimals: 4
+          nativeTokenB:
+            amount: 2
+            decimals: 4
+          usdTokenA: 1.4658129
+          usdTokenB: 5.962134
+        volumes:
+        - 7.0614014
+        - 7.0614014
+        volume24h: 9.301444
+        liquidity:
+          total: 6.0274563
+          nativeTokenA:
+            amount: 2
+            decimals: 4
+          nativeTokenB:
+            amount: 2
+            decimals: 4
+          usdTokenA: 1.4658129
+          usdTokenB: 5.962134
+        prices:
+          BperA: 2.302136
+          AperB: 5.637377
+        supply:
+          amount: 2
+          decimals: 4
+      properties:
+        supply:
+          $ref: '#/components/schemas/Amount'
+        liquidity:
+          $ref: '#/components/schemas/TokenSwap_meta_liquidity'
+        volume:
+          $ref: '#/components/schemas/TokenSwap_meta_liquidity'
+        prices:
+          $ref: '#/components/schemas/TokenSwap_meta_prices'
+        volumes:
+          items:
+            format: float
+            type: number
+          type: array
+        volume24h:
+          format: float
+          type: number
+      type: object
+    Account_value_base:
+      example:
+        owner:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        rentEpoch: 6
+        address:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        balance: 0
+        dataSize: 1
+        executable: true
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        balance:
+          type: integer
+        executable:
+          type: boolean
+        owner:
+          $ref: '#/components/schemas/Address'
+        rentEpoch:
+          type: integer
+        dataSize:
+          type: integer
+      type: object
+    Account_value:
+      example:
+        extended: '{}'
+        base:
+          owner:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          rentEpoch: 6
+          address:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          balance: 0
+          dataSize: 1
+          executable: true
+      properties:
+        base:
+          $ref: '#/components/schemas/Account_value_base'
+        extended:
+          description: Depends on the type of object
+          type: object
+      type: object
+    AccountSerumInstruction_market:
+      example:
+        baseMint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        quoteMint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        name: name
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        name:
+          type: string
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        quoteMint:
+          $ref: '#/components/schemas/Address'
+        baseMint:
+          $ref: '#/components/schemas/Address'
+      type: object
+    AccountSerumOrder_market:
+      example:
+        baseMint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        baseDecimals: 5
+        quoteMint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        quoteDecimals: 5
+        currentPrice: 1.4658129
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        quoteMint:
+          $ref: '#/components/schemas/Address'
+        baseMint:
+          $ref: '#/components/schemas/Address'
+        currentPrice:
+          format: float
+          type: number
+        baseDecimals:
+          type: integer
+        quoteDecimals:
+          type: integer
+      type: object
+    AccountSwapInstruction_tokenswap_tokenA:
+      example:
+        mint:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+        decimals: 1
+      properties:
+        mint:
+          $ref: '#/components/schemas/Address'
+        decimals:
+          type: integer
+      type: object
+    AccountSwapInstruction_tokenswap_poolToken:
+      example:
+        decimals: 5
+      properties:
+        decimals:
+          type: integer
+      type: object
+    AccountSwapInstruction_tokenswap:
+      example:
+        name: name
+        tokenA:
+          mint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          decimals: 1
+        poolToken:
+          decimals: 5
+        tokenB:
+          mint:
+            ticker: ticker
+            cmcId: cmcId
+            address: address
+            name: name
+            logo: logo
+          decimals: 1
+        pubkey:
+          ticker: ticker
+          cmcId: cmcId
+          address: address
+          name: name
+          logo: logo
+      properties:
+        pubkey:
+          $ref: '#/components/schemas/Address'
+        name:
+          type: string
+        tokenA:
+          $ref: '#/components/schemas/AccountSwapInstruction_tokenswap_tokenA'
+        tokenB:
+          $ref: '#/components/schemas/AccountSwapInstruction_tokenswap_tokenA'
+        poolToken:
+          $ref: '#/components/schemas/AccountSwapInstruction_tokenswap_poolToken'
+      type: object
+    StakeAccount_data_meta_authorized:
+      example:
+        staker: staker
+        withdrawer: withdrawer
+      properties:
+        staker:
+          type: string
+        withdrawer:
+          type: string
+      type: object
+    StakeAccount_data_meta:
+      example:
+        authorized:
+          staker: staker
+          withdrawer: withdrawer
+        rent_exempt_reserve: 4
+      properties:
+        rent_exempt_reserve:
+          type: integer
+        authorized:
+          $ref: '#/components/schemas/StakeAccount_data_meta_authorized'
+      type: object
+    StakeAccount_data_lockup:
+      example:
+        custodian: custodian
+        epoch: 1
+        unix_timestamp: 7
+      properties:
+        unix_timestamp:
+          type: integer
+        epoch:
+          type: integer
+        custodian:
+          type: string
+      type: object
+    StakeAccount_data_stake_delegation:
+      example:
+        stake: 1
+        deactivation_epoch: 6
+        validatorInfo:
+          image: image
+          website: website
+          name: name
+          nodePubkey: nodePubkey
+        voter_pubkey: voter_pubkey
+        activation_epoch: 1
+        warmup_cooldown_rate: 7
+      properties:
+        voter_pubkey:
+          type: string
+        stake:
+          type: integer
+        activation_epoch:
+          type: integer
+        deactivation_epoch:
+          type: integer
+        warmup_cooldown_rate:
+          type: integer
+        validatorInfo:
+          $ref: '#/components/schemas/Block_proposerData'
+      type: object
+    StakeAccount_data_stake:
+      example:
+        credits_observed: 1
+        delegation:
+          stake: 1
+          deactivation_epoch: 6
+          validatorInfo:
+            image: image
+            website: website
+            name: name
+            nodePubkey: nodePubkey
+          voter_pubkey: voter_pubkey
+          activation_epoch: 1
+          warmup_cooldown_rate: 7
+      properties:
+        delegation:
+          $ref: '#/components/schemas/StakeAccount_data_stake_delegation'
+        credits_observed:
+          type: integer
+      type: object
+    StakeAccount_data:
+      example:
+        lockup:
+          custodian: custodian
+          epoch: 1
+          unix_timestamp: 7
+        stake:
+          credits_observed: 1
+          delegation:
+            stake: 1
+            deactivation_epoch: 6
+            validatorInfo:
+              image: image
+              website: website
+              name: name
+              nodePubkey: nodePubkey
+            voter_pubkey: voter_pubkey
+            activation_epoch: 1
+            warmup_cooldown_rate: 7
+        meta:
+          authorized:
+            staker: staker
+            withdrawer: withdrawer
+          rent_exempt_reserve: 4
+        state: 2
+      properties:
+        state:
+          type: integer
+        meta:
+          $ref: '#/components/schemas/StakeAccount_data_meta'
+        lockup:
+          $ref: '#/components/schemas/StakeAccount_data_lockup'
+        stake:
+          $ref: '#/components/schemas/StakeAccount_data_stake'
+      type: object
+    Validator_validator_blockProduction:
+      example:
+        skippedSlots: 9
+        leaderSlots: 7
+      properties:
+        leaderSlots:
+          type: integer
+        skippedSlots:
+          type: integer
+      type: object
+    Validator_validator_asn:
+      example:
+        code: code
+        organization: organization
+      properties:
+        code:
+          type: string
+        organization:
+          type: string
+      type: object
+    Validator_validator:
+      example:
+        website: website
+        stakePercentage: 6
+        epochCredits:
+        - 5
+        - 5
+        lastVote: 5
+        epochVoteAccount: true
+        pictureURL: pictureURL
+        delegatorCount: 4
+        votePubkey: votePubkey
+        moniker: moniker
+        nodePubkey: nodePubkey
+        rootSlot: 2
+        delegatingStakeAccounts:
+        - lamports: 3
+          data:
+            lockup:
+              custodian: custodian
+              epoch: 1
+              unix_timestamp: 7
+            stake:
+              credits_observed: 1
+              delegation:
+                stake: 1
+                deactivation_epoch: 6
+                validatorInfo:
+                  image: image
+                  website: website
+                  name: name
+                  nodePubkey: nodePubkey
+                voter_pubkey: voter_pubkey
+                activation_epoch: 1
+                warmup_cooldown_rate: 7
+            meta:
+              authorized:
+                staker: staker
+                withdrawer: withdrawer
+              rent_exempt_reserve: 4
+            state: 2
+          pubkey: pubkey
+        - lamports: 3
+          data:
+            lockup:
+              custodian: custodian
+              epoch: 1
+              unix_timestamp: 7
+            stake:
+              credits_observed: 1
+              delegation:
+                stake: 1
+                deactivation_epoch: 6
+                validatorInfo:
+                  image: image
+                  website: website
+                  name: name
+                  nodePubkey: nodePubkey
+                voter_pubkey: voter_pubkey
+                activation_epoch: 1
+                warmup_cooldown_rate: 7
+            meta:
+              authorized:
+                staker: staker
+                withdrawer: withdrawer
+              rent_exempt_reserve: 4
+            state: 2
+          pubkey: pubkey
+        version: version
+        activatedStake: 0
+        commission: 1
+        location:
+          eu: eu
+          ll:
+          - 9
+          - 9
+          area: 6
+          country: country
+          city: city
+          timezone: timezone
+          metro: 9
+          range:
+          - 5
+          - 5
+          region: region
+        details: details
+        asn:
+          code: code
+          organization: organization
+        blockProduction:
+          skippedSlots: 9
+          leaderSlots: 7
+      properties:
+        activatedStake:
+          type: integer
+        stakePercentage:
+          type: integer
+        commission:
+          type: integer
+        epochCredits:
+          items:
+            type: integer
+          type: array
+        epochVoteAccount:
+          type: boolean
+        lastVote:
+          type: integer
+        nodePubkey:
+          type: string
+        rootSlot:
+          type: integer
+        votePubkey:
+          type: string
+        blockProduction:
+          $ref: '#/components/schemas/Validator_validator_blockProduction'
+        delegatingStakeAccounts:
+          items:
+            $ref: '#/components/schemas/StakeAccount'
+          type: array
+        delegatorCount:
+          type: integer
+        location:
+          $ref: '#/components/schemas/nonvalidators_location'
+        moniker:
+          type: string
+        website:
+          type: string
+        pictureURL:
+          type: string
+        version:
+          type: string
+        details:
+          type: string
+        asn:
+          $ref: '#/components/schemas/Validator_validator_asn'
+      type: object
+    Validator_historic:
+      example:
+        stake: 8
+        delegators: 9
+        timestamp: timestamp
+      properties:
+        stake:
+          type: integer
+        delegators:
+          type: integer
+        timestamp:
+          format: timestamp
+          type: string
+      type: object
+    Validator_metrics:
+      example:
+        instructions: 2
+        txcount: 3
+        innerinstructions: 6
+        totalvaluemoved: 5
+        sucessfultxs: 6
+        failedtxs: 6
+        totalfees: 1
+      properties:
+        txcount:
+          type: integer
+        failedtxs:
+          type: integer
+        totalfees:
+          type: integer
+        instructions:
+          type: integer
+        sucessfultxs:
+          type: integer
+        innerinstructions:
+          type: integer
+        totalvaluemoved:
+          type: integer
+      type: object
+    Validator_latestBlocks:
+      example:
+        blocktime:
+          absolute: 1
+          relative: 5
+        proposer: proposer
+        blocknumber: 6
+        metrics:
+          instructions: 2
+          txcount: 3
+          innerinstructions: 6
+          totalvaluemoved: 5
+          sucessfultxs: 6
+          failedtxs: 6
+          totalfees: 1
+      properties:
+        blocknumber:
+          type: integer
+        blocktime:
+          $ref: '#/components/schemas/Timestamp'
+        metrics:
+          $ref: '#/components/schemas/Validator_metrics'
+        proposer:
+          type: string
+      type: object
+    Wealth_wealth_distribution_0_10:
+      example:
+        percentage: percentage
+        value: value
+        usdValue: usdValue
+      properties:
+        value:
+          type: string
+        percentage:
+          type: string
+        usdValue:
+          type: string
+      type: object
+    Wealth_wealth_distribution_total:
+      example:
+        stake: stake
+        system: system
+        sum: sum
+        spl: spl
+      properties:
+        system:
+          type: string
+        stake:
+          type: string
+        spl:
+          type: string
+        sum:
+          type: string
+      type: object
+    Wealth_wealth_distribution:
+      example:
+        "11_50":
+          percentage: percentage
+          value: value
+          usdValue: usdValue
+        "51_100":
+          percentage: percentage
+          value: value
+          usdValue: usdValue
+        rest:
+          percentage: percentage
+          value: value
+          usdValue: usdValue
+        total:
+          stake: stake
+          system: system
+          sum: sum
+          spl: spl
+        "0_10":
+          percentage: percentage
+          value: value
+          usdValue: usdValue
+      properties:
+        "0_10":
+          $ref: '#/components/schemas/Wealth_wealth_distribution_0_10'
+        "11_50":
+          $ref: '#/components/schemas/Wealth_wealth_distribution_0_10'
+        "51_100":
+          $ref: '#/components/schemas/Wealth_wealth_distribution_0_10'
+        rest:
+          $ref: '#/components/schemas/Wealth_wealth_distribution_0_10'
+        total:
+          $ref: '#/components/schemas/Wealth_wealth_distribution_total'
+      type: object
+    Wealth_wealth_span:
+      example:
+        from: 0
+        to: 6
+      properties:
+        from:
+          type: integer
+        to:
+          type: integer
+      type: object
+    Wealth_wealth_addresses:
+      example:
+        percentage: percentage
+        count: 1
+      properties:
+        count:
+          type: integer
+        percentage:
+          type: string
+      type: object
+    Wealth_wealth_groupedBalances:
+      example:
+        addresses:
+          percentage: percentage
+          count: 1
+        balances:
+          percentage: percentage
+          value: value
+          usdValue: usdValue
+        span:
+          from: 0
+          to: 6
+      properties:
+        span:
+          $ref: '#/components/schemas/Wealth_wealth_span'
+        addresses:
+          $ref: '#/components/schemas/Wealth_wealth_addresses'
+        balances:
+          $ref: '#/components/schemas/Wealth_wealth_distribution_0_10'
+      type: object
+    Wealth_wealth:
+      example:
+        price: 5.962134
+        groupedBalances:
+        - addresses:
+            percentage: percentage
+            count: 1
+          balances:
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+          span:
+            from: 0
+            to: 6
+        - addresses:
+            percentage: percentage
+            count: 1
+          balances:
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+          span:
+            from: 0
+            to: 6
+        distribution:
+          "11_50":
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+          "51_100":
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+          rest:
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+          total:
+            stake: stake
+            system: system
+            sum: sum
+            spl: spl
+          "0_10":
+            percentage: percentage
+            value: value
+            usdValue: usdValue
+      properties:
+        distribution:
+          $ref: '#/components/schemas/Wealth_wealth_distribution'
+        groupedBalances:
+          items:
+            $ref: '#/components/schemas/Wealth_wealth_groupedBalances'
+          type: array
+        price:
+          format: float
+          type: number
+      type: object
+    inline_response_200_10_boundaries:
+      example:
+        start: 0
+        end: 6
+      properties:
+        start:
+          type: integer
+        end:
+          type: integer
+      type: object
+    inline_response_200_14_mintAddress_meta:
+      example:
+        url: url
+      properties:
+        url:
+          type: string
+      type: object
+    inline_response_200_14_mintAddress:
+      example:
+        ticker: ticker
+        cmcId: cmcId
+        meta:
+          url: url
+        name: name
+        logo: logo
+        coingeckoId: coingeckoId
+      properties:
+        name:
+          type: string
+        ticker:
+          type: string
+        cmcId:
+          type: string
+        coingeckoId:
+          type: string
+        logo:
+          type: string
+        meta:
+          $ref: '#/components/schemas/inline_response_200_14_mintAddress_meta'
+      type: object
+  securitySchemes:
+    apiAuth:
+      scheme: bearer
+      type: http
